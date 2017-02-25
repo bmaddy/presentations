@@ -1,1 +1,1 @@
-I'm trying out git as a place to stick presentation resources for people.
+A colleciton of various presentations I've given over the years.
