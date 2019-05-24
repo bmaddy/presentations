@@ -78,7 +78,6 @@ for small input changes (stored in special references)"
 ** make it work with core.cache
 
 * might be faster if you used mutable variables (ex. the proteus library)
-** not going to pursue this further 
-*** doesn't give me enough of a performance benefit
+** probably not going to pursue this further right now
 *** I don't see an easier way to write html rendering code
 *** it forces you to think about calling adapton?, adapton-force, etc.
