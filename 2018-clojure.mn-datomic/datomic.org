@@ -1,0 +1,219 @@
+#+REVEAL_ROOT: http://cdn.jsdelivr.net/reveal.js/3.0.0/
+#+REVEAL_PLUGINS: (highlight)
+
+* what people would like to know about
+** datomic cloud
+** shipping & deploying
+** details of the query language
+** migrations
+* to review
+** http://www.dustingetz.com/:datomic-faq
+** http://augustl.com/blog/2018/datomic_look_at_all_the_things_i_am_not_doing/
+
+** https://www.arrdem.com/2018/05/17/shelving_building_a_datalog/
+** https://gist.github.com/stuarthalloway/2645453
+* main points
+** it's a graph, not tabular
+*** want a format to describe absolutely anything
+   : Every entity has attributes and values...it's a map!
+#+BEGIN_SRC: clojure
+;; Planet Earth
+{:name "Earth"
+ :mass 5,972.37 ;; yottagrams
+ :highest-point {:name "Mt. Everest"}
+}
+#+END_SRC
+*** but the world has multiple entities
+#+BEGIN_SRC: clojure
+{11 {:name "Earth"
+     :mass 5,972.37 ;; yottagrams
+     :highest-point {:name "Mt. Everest"}}
+ 12 {:name "Asia"
+     :highest-point ???
+     :mountains ???}}
+#+END_SRC
+*** entities in this world are graphs, not trees
+   : flatten and use references
+#+BEGIN_SRC: clojure
+{11 {:name "Earth"
+     :mass 5,972.37 ;; yottagrams
+     :highest-point 13}
+ 12 {:name "Asia"
+     :highest-point 13
+     :mountains [13 ...]}
+ 13 {:name "Mt. Everest"}}
+#+END_SRC
+*** another way to write multiple entities
+#+BEGIN_SRC: clojure
+#{[11 :name          "Earth"]
+  [11 :mass          5,972.37]
+  [11 :highest-point 13]
+  [12 :name          "Asia"]
+  [12 :highest-point 13]
+  [12 :mountains     13]
+  [12 :mountains     19] ;; collections
+  [13 :name          "Mt. Everest"]}
+#+END_SRC
+*** what about conflicting attribute names?
+   : namespaces to the rescue!
+#+BEGIN_SRC: clojure
+#{[14 :name  "Ship of Theseus"]
+  [14 :ship/length 37] ;; meters
+  [15 :name "Inception"
+  [15 :movie/length 148]} ;; minutes
+#+END_SRC
+   : it's common to use the type as the namespace (eg. :person/name), but not required
+*** Let's talk about RDF (datomic is not RDF)
+   : https://www.wikidata.org/wiki/Q2
+*** how this could look in Datomic
+#+BEGIN_SRC: clojure
+;; [entity attribute      value         transaction added?]
+#{ [11     :name          "Earth"       6           true]
+   [11     :mass          5,972.37      6           true]
+   [11     :highest-point 13            6           true]
+   [12     :name          "Asia"        6           true]
+   [12     :highest-point 13            6           true]
+   [12     :mountains     13            6           true]
+   [12     :mountains     19            6           true]
+   [13     :name          "Mt. Everest" 6           true]}
+#+END_SRC
+   : Q: What is an entity without any attributes?
+*** But wait, attributes are entities too!
+#+BEGIN_SRC: clojure
+;; [entity attribute      value          transaction added?]
+#{ [1      :db/ident      :name          5           true]
+   [2      :db/ident      :mass          5           true]
+   [3      :db/ident      :highest-point 5           true]
+   [4      :db/ident      :mountains     5           true]
+   [11     1              "Earth"        6           true]
+   [11     2              5,972.37       6           true]
+   [11     3              13             6           true]
+   [12     1              "Asia"         6           true]
+   [12     3              13             6           true]
+   [12     4              13             6           true]
+   [12     4              19             6           true]
+   [13     1              "Mt. Everest"  6           true]
+   [13     5              :mountain      6           true]}
+#+END_SRC
+   : Note: tx is db time, not wall clock time
+** Querying methods
+*** Datum queries
+**** Everything is indexed
+    : EAVT - entity, attribute, value, tx
+    : AEVT - attribute, entity, value, tx
+    : AVET - attribute, value, entity, tx
+    : VAET - value, attribute, entity, tx
+#+BEGIN_SRC: clojure
+;; get all data associated with an entity
+(pprint (take 10 (d/datoms (d/db conn) :eavt [:planet/name "Earth"])))
+;; get all the info about this attribute
+(pprint (take 10 (d/datoms (d/db conn) :eavt 64)))
+;; :db/ident has :db/unique set, so we can use a lookup ref
+(pprint (take 10 (d/datoms (d/db conn) :eavt [:db/ident :planet/name])))
+;; also, :db/ident is just a programmatic name for a :db/id
+(pprint (take 10 (d/datoms (d/db conn) :eavt :planet/name)))
+;; all data associated with this attribute
+(pprint (take 10 (d/datoms (d/db conn) :avet :planet/name)))
+;; all data with this attribute and value
+(pprint (take 10 (d/datoms (d/db conn) :avet :planet/name "Earth")))
+#+END_SRC
+*** Entity queries
+#+BEGIN_SRC: clojure
+;; get all info about this entity as a map (actually an EntityMap)
+(pprint (into {} (d/entity (d/db conn) [:planet/name "Earth"])))
+;; this attribute is unique
+(pprint (into {} (d/entity (d/db conn) [:db/ident :planet/name])))
+(pprint (seq (d/datoms (d/db conn) :eavt :planet/name)))
+;; lookup refs work here also
+(pprint (into {} (d/entity (d/db conn) [:planet/name "Earth"])))
+#+END_SRC
+*** reverse relationships: _attr-name
+   : relationships can be reversed if you prefix the name with an underscore
+#+BEGIN_SRC: clojure
+(def asia (d/entity (d/db conn) [:continent/name "Asia"]))
+;; the first mountain
+(->> asia
+     :continent/mountains
+     first
+     (into {})
+     pprint)
+;; has a reverse reference to the continent
+(->> asia
+     :continent/mountains
+     first
+     :continent/_mountains
+     (into {})
+     pprint)
+#+END_SRC
+*** Pull expressions
+#+BEGIN_SRC: clojure
+(d/pull (d/db conn) [:db/id :planet/name] [:planet/name "Earth"])
+;; starting at a node in the graph, return a tree of data...
+(pprint
+ (d/pull (d/db conn)
+         [:db/id
+          :planet/name
+          {:planet/highest-point [:name {:continent/_mountains [:db/id :continent/name]}]}]
+         [:planet/name "Earth"]))
+#+END_SRC
+*** Relational queries
+#+BEGIN_SRC: clojure
+#+END_SRC:
+*** Transactions (adding new data)
+**** individual datums
+**** entire entities
+*** Retractions
+**** :db.fn/retractEntity
+** benefits
+** gotchas
+*** proprietary, closed source
+*** tx-time is db-time, not when the event happened
+*** the next tx must be after previous ones (no rewriting history!)
+** datomic cloud
+*** ions are supposed to give peer-like functionality
+** More info
+*** Best Practices: https://docs.datomic.com/on-prem/best-practices.html
+
+
+* explain datalog
+** maybe use https://github.com/djjolicoeur/datamaps
+* database connection : db value :: atom : value
+** `conn` : `(d/db conn)` :: `(atom 1)` : `@(atom 1)`
+* entities are an illusion, just a collection of attributes
+** want to represent anything
+** don't want empty columns
+** use maps
+** play nice with others means use namespaces
+** ends up being a db with a single table
+* Edgar Hoare's complaints
+** fixing UNION ALL
+* build example EAV db with nested vectors and `for`
+* really it's EAVT_, explain the last two
+* schema migration - https://github.com/rkneufeld/conformity
+** expect your schema to change over time
+
+* tx time is db time, not user time
+* model based testing doesn't make as much sense because any entity could have any attr
+** build your tests for attrs and combinations of attrs
+** include tests for which groups of attrs can be asserted at the same time (similar to models)
+* toss user on tx entity
+* pass db values around
+** functions that use the db are now pure, no more composing queries or a big long transaction
+*** get all benifits of functions being pure (see list in minnebar talk)
+*** ex. you could pass the same db along to all your validations
+** use db-after in tests - no more stubbing db connection
+* rules (composable queries)
+* speculative updates d/with
+** forked, read-only connections with datomock (peers only)
+*** no need for creating dev data, just use staging
+*** When did QA see that error? Try forking the db at that time
+*** note: `as-of` + `with` is not a branch, it's a filter with speculative transactions
+* related databases
+** non-durable cljs version: https://github.com/tonsky/datascript
+** start of a durable OSS project: https://github.com/replikativ/datahike
+*** uses https://github.com/datacrypt-project/hitchhiker-tree
+** embeddable https://github.com/mozilla/mentat
+** querying normal maps https://github.com/djjolicoeur/datamaps
+* vs sql
+** https://news.ycombinator.com/item?id=13058399
+** https://www.quora.com/Why-is-Datalog-becoming-popular-again

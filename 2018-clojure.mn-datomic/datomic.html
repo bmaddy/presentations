@@ -1,0 +1,616 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<title></title>
+<meta name="author" content="(Brian Maddy)"/>
+<style type="text/css">
+.underline { text-decoration: underline; }
+</style>
+<link rel="stylesheet" href="http://cdn.jsdelivr.net/reveal.js/3.0.0/css/reveal.css"/>
+
+<link rel="stylesheet" href="http://cdn.jsdelivr.net/reveal.js/3.0.0/css/theme/moon.css" id="theme"/>
+
+<link rel="stylesheet" href="http://cdn.jsdelivr.net/reveal.js/3.0.0/lib/css/zenburn.css"/>
+<!-- If the query includes 'print-pdf', include the PDF print sheet -->
+<script>
+    if( window.location.search.match( /print-pdf/gi ) ) {
+        var link = document.createElement( 'link' );
+        link.rel = 'stylesheet';
+        link.type = 'text/css';
+        link.href = 'http://cdn.jsdelivr.net/reveal.js/3.0.0/css/print/pdf.css';
+        document.getElementsByTagName( 'head' )[0].appendChild( link );
+    }
+</script>
+</head>
+<body>
+<div class="reveal">
+<div class="slides">
+<section id="sec-title-slide"><h2 class="author">Brian Maddy</h2><p class="date">Created: 2018-04-26 Thu 20:49</p>
+</section>
+<section id="table-of-contents">
+<div id="table-of-contents">
+<h2>Table of Contents</h2>
+<div id="text-table-of-contents">
+<ul>
+<li><a href="#/slide-org0774fbb">1. what people would like to know about</a>
+<ul>
+<li><a href="#/slide-orgdd706b8">1.1. datomic cloud</a></li>
+<li><a href="#/slide-orgbf96e87">1.2. shipping &amp; deploying</a></li>
+<li><a href="#/slide-org13678f1">1.3. details of the query language</a></li>
+<li><a href="#/slide-org1bab8d4">1.4. migrations</a></li>
+</ul>
+</li>
+<li><a href="#/slide-orgfec1e7f">2. to review</a>
+<ul>
+<li><a href="#/slide-org7a06acc">2.1. http://www.dustingetz.com/:datomic-faq</a></li>
+<li><a href="#/slide-org0b40c82">2.2. http://augustl.com/blog/2018/datomic_look_at_all_the_things_i_am_not_doing/</a></li>
+</ul>
+</li>
+<li><a href="#/slide-orga4fcaed">3. main points</a>
+<ul>
+<li><a href="#/slide-orgba163f7">3.1. it's a graph, not tabular</a>
+<ul>
+<li><a href="#/slide-orga894f71">3.1.1. want a format to describe absolutely anything</a></li>
+<li><a href="#/slide-org16072a3">3.1.2. but the world has multiple entities</a></li>
+<li><a href="#/slide-org5fdd7c6">3.1.3. entities in this world are graphs, not trees</a></li>
+<li><a href="#/slide-org4d15fff">3.1.4. another way to write multiple entities</a></li>
+<li><a href="#/slide-org40c243b">3.1.5. what about conflicting attribute names?</a></li>
+<li><a href="#/slide-org2469b87">3.1.6. Let's talk about RDF (datomic is not RDF)</a></li>
+<li><a href="#/slide-org0ddabb1">3.1.7. how this could look in Datomic</a></li>
+<li><a href="#/slide-orgcf5930e">3.1.8. But wait, attributes are entities too!</a></li>
+</ul>
+</li>
+<li><a href="#/slide-org62e7a53">3.2. Querying methods</a>
+<ul>
+<li><a href="#/slide-org7b3480b">3.2.1. Datum queries</a></li>
+<li><a href="#/slide-org660feaf">3.2.2. Pull syntax</a></li>
+<li><a href="#/slide-orgf99f8fa">3.2.3. Entity queries</a></li>
+<li><a href="#/slide-orgc81ab3b">3.2.4. reverse relationships: _name</a></li>
+<li><a href="#/slide-org06d77d6">3.2.5. Relational queries</a></li>
+<li><a href="#/slide-orgd99c3ce">3.2.6. Accretion (adding new data)</a></li>
+</ul>
+</li>
+<li><a href="#/slide-orgff2bb0d">3.3. benefits</a></li>
+<li><a href="#/slide-org619f2ce">3.4. gotchas</a></li>
+<li><a href="#/slide-orgd660269">3.5. datomic cloud</a></li>
+<li><a href="#/slide-org8f25b44">3.6. More info</a>
+<ul>
+<li><a href="#/slide-orgd97a20b">3.6.1. Best Practices: https://docs.datomic.com/on-prem/best-practices.html</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a href="#/slide-orgd89a929">4. explain rdf so they don't think in tables</a></li>
+<li><a href="#/slide-org540b4c0">5. explain datalog</a>
+<ul>
+<li><a href="#/slide-org04ded45">5.1. maybe use https://github.com/djjolicoeur/datamaps</a></li>
+</ul>
+</li>
+<li><a href="#/slide-orgfadaa61">6. entities are an illusion, just a collection of attributes</a>
+<ul>
+<li><a href="#/slide-orgab83c3b">6.1. want to represent anything</a></li>
+<li><a href="#/slide-org39b53ec">6.2. don't want empty columns</a></li>
+<li><a href="#/slide-org5a94336">6.3. use maps</a></li>
+<li><a href="#/slide-org0ee3e62">6.4. play nice with others means use namespaces</a></li>
+<li><a href="#/slide-org0ced5b1">6.5. ends up being a db with a single table</a></li>
+</ul>
+</li>
+<li><a href="#/slide-org83f4523">7. Edgar Hoare's complaints</a>
+<ul>
+<li><a href="#/slide-orga6ac43e">7.1. fixing UNION ALL</a></li>
+</ul>
+</li>
+<li><a href="#/slide-org68ae8ac">8. model based testing doesn't make as much sense because any entity could have any attr</a>
+<ul>
+<li><a href="#/slide-org2b06fac">8.1. build your tests for attrs and combinations of attrs</a></li>
+<li><a href="#/slide-orge2506e5">8.2. include tests for which groups of attrs can be asserted at the same time (similar to models)</a></li>
+</ul>
+</li>
+<li><a href="#/slide-orgb581fd4">9. build example EAV db with nested vectors and `for`</a></li>
+<li><a href="#/slide-orge2d623a">10. really it's EAVT_, explain the last two</a></li>
+<li><a href="#/slide-org49ff6b2">11. schema migration - https://github.com/rkneufeld/conformity</a></li>
+<li><a href="#/slide-orgcef0276">12. tx time is db time, not user time</a></li>
+<li><a href="#/slide-orgd2a40e8">13. toss user on tx entity</a></li>
+<li><a href="#/slide-org49a9069">14. pass db values around</a>
+<ul>
+<li><a href="#/slide-org79d7ab0">14.1. functions that use the db are now pure, no more composing queries or a big long transaction</a>
+<ul>
+<li><a href="#/slide-org1933106">14.1.1. get all benifits of functions being pure (see list in minnebar talk)</a></li>
+<li><a href="#/slide-org0ddf4e2">14.1.2. ex. you could pass the same db along to all your validations</a></li>
+</ul>
+</li>
+<li><a href="#/slide-org8b221ae">14.2. use db-after in tests - no more stubbing db connection</a></li>
+</ul>
+</li>
+<li><a href="#/slide-org560ab27">15. rules (composable queries)</a></li>
+<li><a href="#/slide-orgf1d4c5c">16. speculative updates d/with</a>
+<ul>
+<li><a href="#/slide-org2601e89">16.1. forked, read-only connections with datomock (peers only)</a>
+<ul>
+<li><a href="#/slide-org7ebc4ec">16.1.1. no need for creating dev data, just use staging</a></li>
+<li><a href="#/slide-org3e5dadb">16.1.2. When did QA see that error? Try forking the db at that time</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a href="#/slide-orgca7895d">17. proprietary</a></li>
+<li><a href="#/slide-org86f1aab">18. vs sql</a>
+<ul>
+<li><a href="#/slide-orgeb97d0e">18.1. https://news.ycombinator.com/item?id=13058399</a></li>
+<li><a href="#/slide-org8143836">18.2. https://www.quora.com/Why-is-Datalog-becoming-popular-again</a></li>
+</ul>
+</li>
+</ul>
+</div>
+</div>
+</section>
+
+<section>
+<section id="slide-org0774fbb">
+<h2 id="org0774fbb"><span class="section-number-2">1</span> what people would like to know about</h2>
+<div class="outline-text-2" id="text-1">
+</div>
+</section>
+<section id="slide-orgdd706b8">
+<h3 id="orgdd706b8"><span class="section-number-3">1.1</span> datomic cloud</h3>
+</section>
+<section id="slide-orgbf96e87">
+<h3 id="orgbf96e87"><span class="section-number-3">1.2</span> shipping &amp; deploying</h3>
+</section>
+<section id="slide-org13678f1">
+<h3 id="org13678f1"><span class="section-number-3">1.3</span> details of the query language</h3>
+</section>
+<section id="slide-org1bab8d4">
+<h3 id="org1bab8d4"><span class="section-number-3">1.4</span> migrations</h3>
+</section>
+</section>
+<section>
+<section id="slide-orgfec1e7f">
+<h2 id="orgfec1e7f"><span class="section-number-2">2</span> to review</h2>
+<div class="outline-text-2" id="text-2">
+</div>
+</section>
+<section id="slide-org7a06acc">
+<h3 id="org7a06acc"><span class="section-number-3">2.1</span> <a href="http://www.dustingetz.com/:datomic-faq">http://www.dustingetz.com/:datomic-faq</a></h3>
+</section>
+<section id="slide-org0b40c82">
+<h3 id="org0b40c82"><span class="section-number-3">2.2</span> <a href="http://augustl.com/blog/2018/datomic_look_at_all_the_things_i_am_not_doing/">http://augustl.com/blog/2018/datomic_look_at_all_the_things_i_am_not_doing/</a></h3>
+
+</section>
+</section>
+<section>
+<section id="slide-orga4fcaed">
+<h2 id="orga4fcaed"><span class="section-number-2">3</span> main points</h2>
+<div class="outline-text-2" id="text-3">
+</div>
+</section>
+<section id="slide-orgba163f7">
+<h3 id="orgba163f7"><span class="section-number-3">3.1</span> it's a graph, not tabular</h3>
+<div class="outline-text-3" id="text-3-1">
+</div>
+</section>
+<section id="slide-orga894f71">
+<h4 id="orga894f71"><span class="section-number-4">3.1.1</span> want a format to describe absolutely anything</h4>
+<pre class="example">
+Every entity has attributes and values...it's a map!
+
+</pre>
+<p>
+#+BEGIN<sub>SRC</sub>: clojure
+;; Planet Earth
+{:name "Earth"
+ :mass 5,972.37 ;; yottagrams
+ :highest-point {:name "Mt. Everest"
+                 :instance-of :mountain
+}
+#+END<sub>SRC</sub>
+</p>
+</section>
+<section id="slide-org16072a3">
+<h4 id="org16072a3"><span class="section-number-4">3.1.2</span> but the world has multiple entities</h4>
+<p>
+#+BEGIN<sub>SRC</sub>: clojure
+{11 {:name "Earth"
+     :mass 5,972.37 ;; yottagrams
+     :highest-point {:name "Mt. Everest"
+                     :instance-of :mountain}}
+ 12 {:name "Asia"
+     :highest-point ???
+     :mountains ???}}
+#+END<sub>SRC</sub>
+</p>
+</section>
+<section id="slide-org5fdd7c6">
+<h4 id="org5fdd7c6"><span class="section-number-4">3.1.3</span> entities in this world are graphs, not trees</h4>
+<pre class="example">
+flatten and use references
+
+</pre>
+<p>
+#+BEGIN<sub>SRC</sub>: clojure
+{11 {:name "Earth"
+     :mass 5,972.37 ;; yottagrams
+     :highest-point 3}
+ 12 {:name "Asia"
+     :highest-point 13
+     :mountains [13 &#x2026;]}
+ 13 {:name "Mt. Everest"
+     :instance-of :mountain}}
+#+END<sub>SRC</sub>
+</p>
+</section>
+<section id="slide-org4d15fff">
+<h4 id="org4d15fff"><span class="section-number-4">3.1.4</span> another way to write multiple entities</h4>
+<p>
+#+BEGIN<sub>SRC</sub>: clojure
+#{[11 :name          "Earth"]
+  [11 :mass          5,972.37]
+  [11 :highest-point 13]
+  [12 :name          "Asia"]
+  [12 :highest-point 13]
+  [12 :mountains     13]
+  [12 :mountains     19] ;; collections
+  [13 :name          "Mt. Everest"]
+  [13 :instance-of   :mountain]}
+#+END<sub>SRC</sub>
+</p>
+</section>
+<section id="slide-org40c243b">
+<h4 id="org40c243b"><span class="section-number-4">3.1.5</span> what about conflicting attribute names?</h4>
+<pre class="example">
+namespaces to the rescue!
+
+</pre>
+<p>
+#+BEGIN<sub>SRC</sub>: clojure
+#{[14 :name  "Ship of Theseus"]
+  [14 :ship/length 37] ;; meters
+  [15 :name "Inception"
+  [15 :movie/length 148]} ;; minutes
+#+END<sub>SRC</sub>
+</p>
+</section>
+<section id="slide-org2469b87">
+<h4 id="org2469b87"><span class="section-number-4">3.1.6</span> Let's talk about RDF (datomic is not RDF)</h4>
+<pre class="example">
+https://www.wikidata.org/wiki/Q2
+
+</pre>
+</section>
+<section id="slide-org0ddabb1">
+<h4 id="org0ddabb1"><span class="section-number-4">3.1.7</span> how this could look in Datomic</h4>
+<p>
+#+BEGIN<sub>SRC</sub>: clojure
+(def fake-db
+  ;; [entity attribute      value         transaction added?]
+  #{ [11     :name          "Earth"       6           true]
+     [11     :mass          5,972.37      6           true]
+     [11     :highest-point 13            6           true]
+     [12     :name          "Asia"        6           true]
+     [12     :highest-point 13            6           true]
+     [12     :mountains     13            6           true]
+     [12     :mountains     19            6           true]
+     [13     :name          "Mt. Everest" 6           true]
+     [13     :instance-of   :mountain     6           true]})
+#+END<sub>SRC</sub>
+</p>
+</section>
+<section id="slide-orgcf5930e">
+<h4 id="orgcf5930e"><span class="section-number-4">3.1.8</span> But wait, attributes are entities too!</h4>
+<p>
+#+BEGIN<sub>SRC</sub>: clojure
+;; [entity attribute      value          transaction added?]
+#{ [1      :db/ident      :name          5           true]
+   [2      :db/ident      :mass          5           true]
+   [3      :db/ident      :highest-point 5           true]
+   [4      :db/ident      :mountains     5           true]
+   [5      :db/ident      :instance-of   5           true]
+   [11     1              "Earth"        6           true]
+   [11     2              5,972.37       6           true]
+   [11     3              13             6           true]
+   [12     1              "Asia"         6           true]
+   [12     3              13             6           true]
+   [12     4              13             6           true]
+   [12     4              19             6           true]
+   [13     1              "Mt. Everest"  6           true]
+   [13     5              :mountain      6           true]}
+#+END<sub>SRC</sub>
+</p>
+</section>
+<section id="slide-org62e7a53">
+<h3 id="org62e7a53"><span class="section-number-3">3.2</span> Querying methods</h3>
+<div class="outline-text-3" id="text-3-2">
+</div>
+</section>
+<section id="slide-org7b3480b">
+<h4 id="org7b3480b"><span class="section-number-4">3.2.1</span> Datum queries</h4>
+<div class="outline-text-4" id="text-3-2-1">
+</div>
+<ol class="org-ol">
+<li><a id="orgd623eea"></a>Everything is indexed<br />
+<pre class="example">
+EAVT - entity, attribute, value, tx
+AEVT - attribute, entity, value, tx
+AVET - attribute, value, entity, tx
+VAET - value, attribute, entity, tx
+
+</pre>
+<p>
+#+BEGIN<sub>SRC</sub>: clojure
+;; get all data associated with an entity
+(pprint (take 10 (d/datoms (db) :eavt 17592186275121)))
+;; get all the info about this attribute
+(pprint (take 20 (d/datoms (db) :eavt 398)))
+;; all data associated with this attribute
+(pprint (take 10 (d/datoms (db) :aevt 398)))
+(pprint (take 10 (d/datoms (db) :aevt :ti.invoice-group/invoice-group-name)))
+;; all data with this attribute and value
+(pprint (take 10 (d/datoms (db) :avet 398 "LEAK01")))
+#+END<sub>SRC</sub>
+</p>
+</li>
+</ol>
+</section>
+<section id="slide-org660feaf">
+<h4 id="org660feaf"><span class="section-number-4">3.2.2</span> Pull syntax</h4>
+</section>
+<section id="slide-orgf99f8fa">
+<h4 id="orgf99f8fa"><span class="section-number-4">3.2.3</span> Entity queries</h4>
+<p>
+#+BEGIN<sub>SRC</sub>: clojure
+;; get all info about this entity as a map (actually an EntityMap)
+(pprint (into {} (d/entity (db) 17592210926408)))
+;; this attribute is unique
+(pprint (seq (d/datoms (db) :eavt :ti.bill/id)))
+(pprint (seq (d/datoms (db) :eavt 42)))
+;; we can find entities by unique attributes
+(pprint (into {} (d/entity (db) [:ti.bill/id #uuid "5a835cfb-0741-4104-a48e-2465680abd91"])))
+</p>
+
+<p>
+#+END<sub>SRC</sub>
+</p>
+</section>
+<section id="slide-orgc81ab3b">
+<h4 id="orgc81ab3b"><span class="section-number-4">3.2.4</span> reverse relationships: _name</h4>
+<pre class="example">
+relationships can be reversed if you prefix the name with an underscore
+
+</pre>
+<p>
+#+BEGIN<sub>SRC</sub>: clojure
+(def bill (d/entity (db) 17592210926408))
+;; the first bill-of-lading
+(-&gt;&gt; bill
+     :ti.freight-bill/bills-of-lading
+     first
+     (into {})
+     pprint)
+;; has a reverse reference to the bill
+(-&gt;&gt; bill
+     :ti.freight-bill/bills-of-lading
+     first
+     :ti.freight-bill/<sub>bills</sub>-of-lading
+     (into {})
+     pprint)
+#+END<sub>SRC</sub>
+</p>
+</section>
+<section id="slide-org06d77d6">
+<h4 id="org06d77d6"><span class="section-number-4">3.2.5</span> Relational queries</h4>
+<div class="SRC:">
+
+</div>
+</section>
+<section id="slide-orgd99c3ce">
+<h4 id="orgd99c3ce"><span class="section-number-4">3.2.6</span> Accretion (adding new data)</h4>
+<div class="outline-text-4" id="text-3-2-6">
+</div>
+<ol class="org-ol">
+<li><a id="org2bffbb7"></a>individual datums<br /></li>
+<li><a id="org44c6c2d"></a>entire entities<br /></li>
+</ol>
+</section>
+<section id="slide-orgff2bb0d">
+<h3 id="orgff2bb0d"><span class="section-number-3">3.3</span> benefits</h3>
+</section>
+<section id="slide-org619f2ce">
+<h3 id="org619f2ce"><span class="section-number-3">3.4</span> gotchas</h3>
+</section>
+<section id="slide-orgd660269">
+<h3 id="orgd660269"><span class="section-number-3">3.5</span> datomic cloud</h3>
+</section>
+<section id="slide-org8f25b44">
+<h3 id="org8f25b44"><span class="section-number-3">3.6</span> More info</h3>
+<div class="outline-text-3" id="text-3-6">
+</div>
+</section>
+<section id="slide-orgd97a20b">
+<h4 id="orgd97a20b"><span class="section-number-4">3.6.1</span> Best Practices: <a href="https://docs.datomic.com/on-prem/best-practices.html">https://docs.datomic.com/on-prem/best-practices.html</a></h4>
+
+
+</section>
+</section>
+<section>
+<section id="slide-orgd89a929">
+<h2 id="orgd89a929"><span class="section-number-2">4</span> explain rdf so they don't think in tables</h2>
+</section>
+</section>
+<section>
+<section id="slide-org540b4c0">
+<h2 id="org540b4c0"><span class="section-number-2">5</span> explain datalog</h2>
+<div class="outline-text-2" id="text-5">
+</div>
+</section>
+<section id="slide-org04ded45">
+<h3 id="org04ded45"><span class="section-number-3">5.1</span> maybe use <a href="https://github.com/djjolicoeur/datamaps">https://github.com/djjolicoeur/datamaps</a></h3>
+</section>
+</section>
+<section>
+<section id="slide-orgfadaa61">
+<h2 id="orgfadaa61"><span class="section-number-2">6</span> entities are an illusion, just a collection of attributes</h2>
+<div class="outline-text-2" id="text-6">
+</div>
+</section>
+<section id="slide-orgab83c3b">
+<h3 id="orgab83c3b"><span class="section-number-3">6.1</span> want to represent anything</h3>
+</section>
+<section id="slide-org39b53ec">
+<h3 id="org39b53ec"><span class="section-number-3">6.2</span> don't want empty columns</h3>
+</section>
+<section id="slide-org5a94336">
+<h3 id="org5a94336"><span class="section-number-3">6.3</span> use maps</h3>
+</section>
+<section id="slide-org0ee3e62">
+<h3 id="org0ee3e62"><span class="section-number-3">6.4</span> play nice with others means use namespaces</h3>
+</section>
+<section id="slide-org0ced5b1">
+<h3 id="org0ced5b1"><span class="section-number-3">6.5</span> ends up being a db with a single table</h3>
+</section>
+</section>
+<section>
+<section id="slide-org83f4523">
+<h2 id="org83f4523"><span class="section-number-2">7</span> Edgar Hoare's complaints</h2>
+<div class="outline-text-2" id="text-7">
+</div>
+</section>
+<section id="slide-orga6ac43e">
+<h3 id="orga6ac43e"><span class="section-number-3">7.1</span> fixing UNION ALL</h3>
+</section>
+</section>
+<section>
+<section id="slide-org68ae8ac">
+<h2 id="org68ae8ac"><span class="section-number-2">8</span> model based testing doesn't make as much sense because any entity could have any attr</h2>
+<div class="outline-text-2" id="text-8">
+</div>
+</section>
+<section id="slide-org2b06fac">
+<h3 id="org2b06fac"><span class="section-number-3">8.1</span> build your tests for attrs and combinations of attrs</h3>
+</section>
+<section id="slide-orge2506e5">
+<h3 id="orge2506e5"><span class="section-number-3">8.2</span> include tests for which groups of attrs can be asserted at the same time (similar to models)</h3>
+</section>
+</section>
+<section>
+<section id="slide-orgb581fd4">
+<h2 id="orgb581fd4"><span class="section-number-2">9</span> build example EAV db with nested vectors and `for`</h2>
+</section>
+</section>
+<section>
+<section id="slide-orge2d623a">
+<h2 id="orge2d623a"><span class="section-number-2">10</span> really it's EAVT_, explain the last two</h2>
+</section>
+</section>
+<section>
+<section id="slide-org49ff6b2">
+<h2 id="org49ff6b2"><span class="section-number-2">11</span> schema migration - <a href="https://github.com/rkneufeld/conformity">https://github.com/rkneufeld/conformity</a></h2>
+</section>
+</section>
+<section>
+<section id="slide-orgcef0276">
+<h2 id="orgcef0276"><span class="section-number-2">12</span> tx time is db time, not user time</h2>
+</section>
+</section>
+<section>
+<section id="slide-orgd2a40e8">
+<h2 id="orgd2a40e8"><span class="section-number-2">13</span> toss user on tx entity</h2>
+</section>
+</section>
+<section>
+<section id="slide-org49a9069">
+<h2 id="org49a9069"><span class="section-number-2">14</span> pass db values around</h2>
+<div class="outline-text-2" id="text-14">
+</div>
+</section>
+<section id="slide-org79d7ab0">
+<h3 id="org79d7ab0"><span class="section-number-3">14.1</span> functions that use the db are now pure, no more composing queries or a big long transaction</h3>
+<div class="outline-text-3" id="text-14-1">
+</div>
+</section>
+<section id="slide-org1933106">
+<h4 id="org1933106"><span class="section-number-4">14.1.1</span> get all benifits of functions being pure (see list in minnebar talk)</h4>
+</section>
+<section id="slide-org0ddf4e2">
+<h4 id="org0ddf4e2"><span class="section-number-4">14.1.2</span> ex. you could pass the same db along to all your validations</h4>
+</section>
+<section id="slide-org8b221ae">
+<h3 id="org8b221ae"><span class="section-number-3">14.2</span> use db-after in tests - no more stubbing db connection</h3>
+</section>
+</section>
+<section>
+<section id="slide-org560ab27">
+<h2 id="org560ab27"><span class="section-number-2">15</span> rules (composable queries)</h2>
+</section>
+</section>
+<section>
+<section id="slide-orgf1d4c5c">
+<h2 id="orgf1d4c5c"><span class="section-number-2">16</span> speculative updates d/with</h2>
+<div class="outline-text-2" id="text-16">
+</div>
+</section>
+<section id="slide-org2601e89">
+<h3 id="org2601e89"><span class="section-number-3">16.1</span> forked, read-only connections with datomock (peers only)</h3>
+<div class="outline-text-3" id="text-16-1">
+</div>
+</section>
+<section id="slide-org7ebc4ec">
+<h4 id="org7ebc4ec"><span class="section-number-4">16.1.1</span> no need for creating dev data, just use staging</h4>
+</section>
+<section id="slide-org3e5dadb">
+<h4 id="org3e5dadb"><span class="section-number-4">16.1.2</span> When did QA see that error? Try forking the db at that time</h4>
+</section>
+</section>
+<section>
+<section id="slide-orgca7895d">
+<h2 id="orgca7895d"><span class="section-number-2">17</span> proprietary</h2>
+</section>
+</section>
+<section>
+<section id="slide-org86f1aab">
+<h2 id="org86f1aab"><span class="section-number-2">18</span> vs sql</h2>
+<div class="outline-text-2" id="text-18">
+</div>
+</section>
+<section id="slide-orgeb97d0e">
+<h3 id="orgeb97d0e"><span class="section-number-3">18.1</span> <a href="https://news.ycombinator.com/item?id=13058399">https://news.ycombinator.com/item?id=13058399</a></h3>
+</section>
+<section id="slide-org8143836">
+<h3 id="org8143836"><span class="section-number-3">18.2</span> <a href="https://www.quora.com/Why-is-Datalog-becoming-popular-again">https://www.quora.com/Why-is-Datalog-becoming-popular-again</a></h3>
+</section>
+</section>
+</div>
+</div>
+<script src="http://cdn.jsdelivr.net/reveal.js/3.0.0/lib/js/head.min.js"></script>
+<script src="http://cdn.jsdelivr.net/reveal.js/3.0.0/js/reveal.js"></script>
+
+<script>
+// Full list of configuration options available here:
+// https://github.com/hakimel/reveal.js#configuration
+Reveal.initialize({
+
+controls: true,
+progress: true,
+history: false,
+center: true,
+slideNumber: 'c',
+rollingLinks: false,
+keyboard: true,
+overview: true,
+
+theme: Reveal.getQueryHash().theme, // available themes are in /css/theme
+transition: Reveal.getQueryHash().transition || 'default', // default/cube/page/concave/zoom/linear/fade/none
+transitionSpeed: 'default',
+multiplex: {
+    secret: '', // null if client
+    id: '', // id, obtained from socket.io server
+    url: '' // Location of socket.io server
+},
+
+// Optional libraries used to extend on reveal.js
+dependencies: [
+ { src: 'http://cdn.jsdelivr.net/reveal.js/3.0.0/plugin/highlight/highlight.js', async: true, callback: function() { hljs.initHighlightingOnLoad(); } }]
+});
+</script>
+</body>
+</html>

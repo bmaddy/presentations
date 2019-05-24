@@ -1,0 +1,84 @@
+* Overview:
+** found a paper and implemented it
+** about Incremental Computation and Adapton, lots of code
+** Evaluation; not pursuing it further
+
+
+
+
+* First Conj, saw chouser present on a paper he implemented
+** eventually became clojure.data.finger-tree
+* I came from Ruby; Clojure has a closer relationship to papers
+* David Nolen: Find a paper, implement it
+* Coworker mentioned the miniAdapton paper to me
+** a minimal implementation of incremental computation in scheme
+** follows the idea of minikanren/microkanren
+** microadapton - core functionality, no macros
+** miniadapton - nicer interface by using macros
+
+
+
+
+* memoization is great for speeding things up (show fibonacci)
+** can transform exponential-time algorithms to linear-time (cormen et al. 2006)
+** doesn't work with mutation
+
+* incremental computation
+** "a computation is incremental if: repeating it with a changed input is faster than from-scratch recomputation"
+*** incremental computation with adapton by matthew a hammer
+*** https://vimeo.com/122066659
+** annotate diagram on wikipedia
+
+* adapton
+** a version of incremental computation that allows you to update the memoization cache
+** it does this by using a demanded computation graph (dcg)
+
+
+* similar to reactive programming
+** "chief aim of frp is to provide a declarative means of specifying programs whose
+values are time-dependent (stored in signals), whereas the chief aim of ic is to provide time savings
+for small input changes (stored in special references)"
+** report from dagstuhl seminar 16402: programming language techniques for incremental and reactive computing
+*** http://www.informatik.uni-marburg.de/~seba/publications/ic-dagstuhl.pdf
+
+* where it could be useful
+** spreadsheets (change data & formula; recompute data and charts)
+** makefile/build systems (change code; recompute binaries)
+** ides (change code; recompute test results)
+** databases (change data; recompute queries and views)
+** web browsers (change dom; recompute rendered page)
+** the dom is a bunch of mutable variables, could this be useful there?
+*** jane street presentation on using this for a web page
+** managing servers? (where did you see this?)
+** from http://www.informatik.uni-marburg.de/~seba/publications/ic-dagstuhl.pdf
+*** avoid communication of data that has not changed since the last pass
+**** data syncrhonization or versioning
+*** the analysis, rendering or calculations that have not been affected by changes
+**** program analysis
+**** html rendering
+***** see diagram in red notebook
+**** spreadsheet evaluation
+
+
+* athunks: maintain the property of "from scratch consistency"
+** they are thunks that keep track of
+*** how they were computed (i.e. what athunks they use)
+*** what they are used to compute (i.e. what athunks use them)
+*** their latest value if they've been forced, or not if marked dirty
+** the athunks form a bidirectional computation graph
+
+* max-tree: find max number in binary tree
+* max-tree-path: find path to max number in binary tree
+
+* future ideas
+** make athunks implement the protocol for atoms or refs
+*** could you use add-watch to mark things dirty?
+*** could have concurrency issues (i.e. b depends on a, a is constantly updated which repeatedly marks b as dirty)
+*** perhaps convert everything into a single atom to keep operations atomic
+** make it work with core.cache
+
+* might be faster if you used mutable variables (ex. the proteus library)
+** not going to pursue this further 
+*** doesn't give me enough of a performance benefit
+*** I don't see an easier way to write html rendering code
+*** it forces you to think about calling adapton?, adapton-force, etc.
