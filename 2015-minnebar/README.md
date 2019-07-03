@@ -1,4 +1,6 @@
-## MinneDemo 2015
+## MinneBar 2015
+
+[Video](https://www.youtube.com/watch?v=3_nnVO3XCxk)
 
 [Slides](https://github.com/bmaddy/presentations/blob/master/2015-minnebar/state-immutability-and-persistent-data-structures.pdf)
 
